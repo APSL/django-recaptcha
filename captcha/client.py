@@ -1,10 +1,15 @@
 import json
+import logging
 
 from django.conf import settings
 
 from captcha._compat import (
     build_opener, ProxyHandler, PY2, Request, urlencode, urlopen, want_bytes
 )
+
+
+logger = logging.getLogger(__name__)
+
 
 DEFAULT_API_SSL_SERVER = "//www.google.com/recaptcha/api"  # made ssl agnostic
 DEFAULT_API_SERVER = "//www.google.com/recaptcha/api"  # made ssl agnostic
@@ -57,7 +62,7 @@ def request(*args, **kwargs):
 def submit(recaptcha_challenge_field,
            recaptcha_response_field,
            private_key,
-           remoteip,
+           remoteip=None,
            use_ssl=False):
     """
     Submits a reCAPTCHA request for verification. Returns RecaptchaResponse
@@ -70,7 +75,6 @@ def submit(recaptcha_challenge_field,
     private_key -- your reCAPTCHA private key
     remoteip -- the user's ip address
     """
-
     if not (recaptcha_response_field and recaptcha_challenge_field and
             len(recaptcha_response_field) and len(recaptcha_challenge_field)):
         return RecaptchaResponse(
@@ -79,18 +83,22 @@ def submit(recaptcha_challenge_field,
         )
 
     if getattr(settings, "NOCAPTCHA", False):
-        params = urlencode({
+        data = {
             'secret': want_bytes(private_key),
             'response': want_bytes(recaptcha_response_field),
-            'remoteip': want_bytes(remoteip),
-        })
+        }
+        if remoteip is not None:
+            data['remoteip'] = want_bytes(remoteip)
+        params = urlencode(data)
     else:
-        params = urlencode({
+        data = {
             'privatekey': want_bytes(private_key),
-            'remoteip':  want_bytes(remoteip),
             'challenge':  want_bytes(recaptcha_challenge_field),
             'response':  want_bytes(recaptcha_response_field),
-        })
+        }
+        if remoteip is not None:
+            data['remoteip'] = want_bytes(remoteip)
+        params = urlencode(data)
 
     if not PY2:
         params = params.encode('utf-8')
@@ -121,9 +129,11 @@ def submit(recaptcha_challenge_field,
             return_code = 'true'
         else:
             return_code = 'false'
+        logger.exception('Recaptcha nocaptcha response', extra={'data': data})
     else:
         return_values = httpresp.read().decode('utf-8').splitlines()
         return_code = return_values[0]
+        logger.exception('Recaptcha response', extra={'return_values': return_values})
 
     httpresp.close()
 

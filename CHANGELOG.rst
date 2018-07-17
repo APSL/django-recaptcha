@@ -3,7 +3,8 @@ Changelog
 
 Pending
 -------
-#. New release notes go here.
+#. Add boolean RECAPTCHA_VERIFY_REMOTEIP to allow to not verify the remote ip
+   against reCAPTCHA API.
 
 1.4.0 (2018-02-08)
 ------------------

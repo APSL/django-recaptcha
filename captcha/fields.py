@@ -20,7 +20,7 @@ class ReCaptchaField(forms.CharField):
     }
 
     def __init__(self, public_key=None, private_key=None, use_ssl=None,
-                 attrs=None, *args, **kwargs):
+                 verify_remoteip=None, attrs=None, *args, **kwargs):
         """
         ReCaptchaField can accepts attributes which is a dictionary of
         attributes to be passed to the ReCaptcha widget class. The widget will
@@ -36,6 +36,8 @@ class ReCaptchaField(forms.CharField):
             getattr(settings, 'RECAPTCHA_PRIVATE_KEY', TEST_PRIVATE_KEY)
         self.use_ssl = use_ssl if use_ssl is not None else getattr(
             settings, 'RECAPTCHA_USE_SSL', True)
+        self.verify_remoteip = verify_remoteip if verify_remoteip is not None \
+            else getattr(settings, 'RECAPTCHA_VERIFY_REMOTEIP', True)
 
         self.widget = ReCaptcha(public_key=public_key, attrs=attrs)
         self.required = True
@@ -66,10 +68,11 @@ class ReCaptchaField(forms.CharField):
             return
 
         try:
+            remoteip = self.get_remote_ip() if self.verify_remoteip else None
             check_captcha = client.submit(
                 recaptcha_challenge_value,
                 recaptcha_response_value, private_key=self.private_key,
-                remoteip=self.get_remote_ip(), use_ssl=self.use_ssl)
+                remoteip=remoteip, use_ssl=self.use_ssl)
 
         except socket.error:  # Catch timeouts, etc
             raise ValidationError(

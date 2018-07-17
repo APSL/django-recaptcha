@@ -54,6 +54,12 @@ Installation
 
        RECAPTCHA_PROXY = 'http://127.0.0.1:8000'
 
+#. If you don't want to verify the remote ip against the reCAPTCHA API add a ``RECAPTCHA_VERIFY_REMOTEIP`` setting, for example:
+
+   .. code-block:: python
+
+       RECAPTCHA_VERIFY_REMOTEIP = False
+
 Usage
 -----
 
